@@ -237,7 +237,7 @@ def resolver_sudoku(lista, editados):
 pygame.init()
 
 ventana = pygame.display.set_mode([LADO_VENTANA, LADO_VENTANA])
-pygame.display.set_caption("Resolvedor-Sudokus")
+pygame.display.set_caption("Creador-Sudokus")
 
 font = pygame.font.SysFont("Courier", LADO_CADRADO)
 
