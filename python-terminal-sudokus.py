@@ -65,7 +65,7 @@ def comprobar_sudoku(taboleiro):
 		return False
 				
 				
-#FUNCIÓN PARA OMPROBAR AS POSIBILIDADES DE CADA CASILLA 
+#FUNCIÓN PARA COMPROBAR AS POSIBILIDADES DE CADA CASILLA 
 #CANDO SE ENGADE UN VALOR A UNHA
 def quitar_posibles(taboleiro,num,pos,copia=True):
 	fila_afectada = filas[pos/9]
@@ -84,22 +84,63 @@ def quitar_posibles(taboleiro,num,pos,copia=True):
 	return taboleiro
 
 #COMPROBAMOS SE O TABOLEIRO É IDÓNEO PARA AVANZAR
-def comprobacion(taboleiro,pos):
+def valido(taboleiro,pos):
 	fila_a_comprobar = filas[pos/9]
 	columna_a_comprobar = columnas[pos-9*(pos/9)]
 	for cadro in cadros:
 		if pos in cadro:
 			cadro_a_comprobar = cadro
 	casillas_a_comprobar = fila_a_comprobar+columna_a_comprobar+cadro_a_comprobar
-	casillas_a_comprobar = [x for x in casillas_a_comprobar if x>pos]
+	casillas_a_comprobar = list(set([x for x in casillas_a_comprobar if x>pos]))
 	
-	print [taboleiro[x].posibles_copia for x in fila_a_comprobar if x>pos]
-	
-	if [] in [taboleiro[x].posibles_copia for x in casillas_a_comprobar
-							if not taboleiro[x].marcada]:
+	#COMPROBAMOS SE ALGUNHA CASILLA SE QUEDOU SEN POSIBLES NÚMEROS
+	posibles_por_casilla = [taboleiro[x].posibles_copia for x in casillas_a_comprobar
+							if not taboleiro[x].marcada]
+	if [] in posibles_por_casilla:
+		
+		print "ERROR"
+		print u"> casilla sen posibles números"
+		print "pos: ",pos
+		print "casilla_propia: ",taboleiro[pos]
+		for c in casillas_a_comprobar:
+			if not taboleiro[c].posibles_copia:
+				print "pos casilla error: ",c
+				print "casilla do error: ", taboleiro[c]
+		debuxar_sudoku(taboleiro)
+		print "-"*30
+		
 		return False
-	else:
-		return True
+		
+	#COMPROBAMOS O NÚMERO DE POSIBLES NÚMEROS NA FILA,COLUMNA E CADRO
+	posibles_fila_casilla = [taboleiro[x].posibles_copia for x in fila_a_comprobar if x>pos]
+	posibles_columna_casilla = [taboleiro[x].posibles_copia for x in columna_a_comprobar if x>pos]
+	posibles_cadro_casilla = [taboleiro[x].posibles_copia for x in cadro_a_comprobar if x>pos]
+	
+	count = -1
+	que = ["fila","columna","cadro"]
+	
+	for lista_posibles in [posibles_fila_casilla,posibles_columna_casilla,posibles_cadro_casilla]:
+	
+		count += 1
+		
+		posibles_total = []
+		for i in lista_posibles:
+			posibles_total += i
+		
+		if len(list(set(posibles_total))) < len(lista_posibles):
+		
+			print "ERROR"
+			print ">",que[count]
+			print "pos: ",pos
+			print "casilla_propia: ",taboleiro[pos]
+			print "posibles casillas: ",lista_posibles
+			print "posibles total: ",posibles_total
+			print "len posibles:", len(list(set(posibles_total))), "necesarios:", len(lista_posibles)
+			debuxar_sudoku(taboleiro)
+			print "-"*30
+		
+			return False
+	return True
 	
 #CREAMOS/RESOLVEMOS O SUDOKU
 def crear_sudoku():
@@ -109,39 +150,49 @@ def crear_sudoku():
 		casillas.append(casilla(0))
 	#RESOLVER
 	for p in range(len(casillas)):
-		for n in casillas[p].posibles:
-			for u in casillas:
-				u.posibles_copia = u.posibles[:]
-			casillas = quitar_posibles(casillas,n,p)
-			#COMPROBAMOS SE O NÚMERO 'n' É VALIDO
-			if comprobacion(casillas,p):		
-				casillas[p].valor = n
-				casillas[p].marcada = True
-				casillas = quitar_posibles(casillas,n,p,False)
-				break
+		if casillas[p].posibles:
+			for n in casillas[p].posibles:
+				print "pos:",p, "intentando con... ",n
+				for u in casillas:
+					u.posibles_copia = u.posibles[:]
+				casillas = quitar_posibles(casillas,n,p)
+				#COMPROBAMOS SE O NÚMERO 'n' É VALIDO
+				if valido(casillas,p):		
+					casillas[p].valor = n
+					casillas[p].marcada = True
+					casillas = quitar_posibles(casillas,n,p,False)
+					break
+				if n == casillas[p].posibles[-1]:
+					return casillas
+		else:
+			return casillas
 	return casillas
 
+#FUNCIÓN PARA DEBUXAR O SUDOKU NO TERMINAL
+def debuxar_sudoku(taboleiro):
+	for c in range(len(taboleiro)):
+		if c%27 == 0:
+			print
+		if c%9 == 0:
+			print
+		if c%3 == 0:
+			print " ",
+		print taboleiro[c].valor,
+	print
+	print
+	print "Sudoku correcto? ", comprobar_sudoku(taboleiro)
+
 #PROBAS	
-intentos = 1
+intentos = 0
 while True:
 	intentos += 1
 	casillas = crear_sudoku()
 	if not 0 in [c.valor for c in casillas]:
 		break
+	else:
+		debuxar_sudoku(casillas)
 		
 print "intentos: %r" % intentos
 
 #AMOSAMOS O RESULTADO
-for c in range(len(casillas)):
-	if c%27 == 0:
-		print
-	if c%9 == 0:
-		print
-	if c%3 == 0:
-		print " ",
-	print casillas[c].valor,
-	
-print
-print
-	
-print "Sudoku correcto? ", comprobar_sudoku(casillas)
+debuxar_sudoku(casillas)
