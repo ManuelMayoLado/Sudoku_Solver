@@ -18,6 +18,9 @@ for i in range(1,4):
 		CADROS.append([range(x,x+3) for x in range((27*(i-1))+z,(27*i)+z,9)])
 CADROS = [c[0]+c[1]+c[2] for c in CADROS]
 
+#GARDAMOS NUNHA LISTA AS CASILLAS INMUTABLES
+INMUTABLES = []
+
 def cargar_sudoku():
 	if len(sys.argv) > 1:
 		doc = open(sys.argv[1],"r").read()
@@ -25,6 +28,7 @@ def cargar_sudoku():
 		for c in doc:
 			if c.isdigit():
 				lista_doc.append(int(c))
+				INMUTABLES.append(int(c))
 		lista_doc += [0 for x in range(81-len(lista_doc))]
 		debuxar_sudoku(lista_doc,False)
 		return lista_doc
@@ -33,9 +37,10 @@ def cargar_sudoku():
 	
 #CLASE PARA GARDAR DATOS DAS CASILLAS
 class casilla():
-	def __init__(self,valor):
+	def __init__(self,valor,aleatorio=False):
 		self.posibles = range(1,10)
-		random.shuffle(self.posibles)
+		if aleatorio:
+			random.shuffle(self.posibles)
 		self.posibles_copia = self.posibles[:]
 		self.valor = valor
 		if valor:
@@ -72,6 +77,8 @@ def comprobar_cadros(taboleiro):
 	return True
 
 def comprobar_sudoku(taboleiro):
+	if not taboleiro:
+		return False
 	if (comprobar_filas(taboleiro) and comprobar_columnas(taboleiro)
 		and comprobar_cadros(taboleiro)):
 		return True
@@ -152,40 +159,96 @@ def valido(taboleiro,pos):
 			return False
 	return True
 	
+def posibles_avance(taboleiro,pos):
+	fila_a_comprobar = FILAS[pos/9]
+	columna_a_comprobar = COLUMNAS[pos-9*(pos/9)]
+	for cadro in CADROS:
+		if pos in cadro:
+			cadro_a_comprobar = cadro
+	casillas_a_comprobar = fila_a_comprobar+columna_a_comprobar+cadro_a_comprobar
+	casillas_a_comprobar = list(set([x for x in casillas_a_comprobar if x>pos]))
+	#COMPROBAMOS O NÚMERO DE POSIBLES NÚMEROS NA FILA,COLUMNA E CADRO
+	posibles_fila_casilla = [taboleiro[x].posibles_copia for x in fila_a_comprobar 
+			if x>pos and not taboleiro[x].marcada]
+	posibles_columna_casilla = [taboleiro[x].posibles_copia for x in columna_a_comprobar 
+			if x>pos and not taboleiro[x].marcada]
+	posibles_cadro_casilla = [taboleiro[x].posibles_copia for x in cadro_a_comprobar 
+			if x>pos and not taboleiro[x].marcada]
+	posibles_total = posibles_fila_casilla+posibles_columna_casilla+posibles_cadro_casilla
+	return posibles_total
+	
 #CREAMOS/RESOLVEMOS O SUDOKU
-def crear_sudoku(taboleiro=False):
+def resolver_sudoku(taboleiro=False):
+	encrucilladas = []
 	#CREAMOS O TABOLEIRO A 0	
 	casillas = []
 	if not taboleiro:
 		taboleiro = [0 for x in range(81)]
-	for i in taboleiro:
-		casillas.append(casilla(i))
+		for i in taboleiro:
+			casillas.append(casilla(i,True))
+	else:
+		for i in taboleiro:
+			casillas.append(casilla(i))
 	for p in range(len(taboleiro)):
 		if taboleiro[p]:
 			casillas = quitar_posibles(casillas,casillas[p].valor,p)
 			casillas = quitar_posibles(casillas,casillas[p].valor,p,False)
 	#RESOLVER
-	for p in range(len(casillas)):
-		if not casillas[p].marcada:
-			if casillas[p].posibles:
-				for n in casillas[p].posibles:
-					#print "pos:",p, "intentando con... ",n
-					for u in casillas:
-						u.posibles_copia = u.posibles[:]
-					casillas = quitar_posibles(casillas,n,p)
-					#COMPROBAMOS SE O NÚMERO 'n' É VALIDO
-					if valido(casillas,p):		
-						casillas[p].valor = n
-						casillas[p].marcada = True
-						casillas = quitar_posibles(casillas,n,p,False)
-						break
-					if n == casillas[p].posibles[-1]:
-						return casillas
+	p = 0
+	while True:
+		if p < len(casillas):
+			if not casillas[p].marcada:
+				if casillas[p].posibles:
+					#ORDENAMOS AS CASILLAS POSIBLES SEGÚN SE ESTAN OS NÚMEROS
+					#EN OUTRAS CASILLAS
+					casillas[p].posibles = sorted(casillas[p].posibles,
+											key=lambda x: x in posibles_avance(casillas,p),
+											reverse=True)
+					for n in casillas[p].posibles:
+						#print "pos:",p, "intentando con... ",n, " , posibles: ", \
+						#		str(casillas[p].posibles), str(casillas[p].posibles_copia)
+						for u in casillas:
+							u.posibles_copia = u.posibles[:]
+						casillas = quitar_posibles(casillas,n,p)
+						#COMPROBAMOS SE O NÚMERO 'n' É VALIDO
+						if valido(casillas,p):		
+							casillas[p].valor = n
+							casillas[p].posibles.remove(n)
+							casillas[p].marcada = True
+							casillas = quitar_posibles(casillas,n,p,False)
+							if len(casillas[p].posibles_copia) >= 1:
+								encrucilladas.append(p)
+							p += 1
+							break
+						else:
+							casillas[p].posibles.remove(n)
+				else:
+					if encrucilladas:
+						#print ">> retorno", list(reversed(encrucilladas))
+						p = encrucilladas.pop()
+						casillas[p].valor = 0
+						casillas[p].marcada = False
+						for i in range(len(casillas)):
+							if p != i:
+								if not (INMUTABLES and INMUTABLES[i]):
+									if i > p:
+										casillas[i] = casilla(0)
+								else:
+									casillas[i] = casilla(casillas[i].valor)
+							else:
+								casillas[i].marcado = False
+								casillas[i].valor = 0
+						for i in range(0,len(casillas)):
+							casillas = quitar_posibles(casillas,casillas[i].valor,i)
+							casillas = quitar_posibles(casillas,casillas[i].valor,i,False)
+					else:
+						#print "Non se pode resolver!"
+						return False
 			else:
-				return casillas
-		#else:
-			#print "pos:",p, "xa ten numero asignado: ",casillas[p].valor
-	return casillas
+				#print "*pos:",p, "xa ten numero asignado: ",casillas[p].valor
+				p += 1
+		else:
+			return casillas
 
 #FUNCIÓN PARA DEBUXAR O SUDOKU NO TERMINAL
 def debuxar_sudoku(taboleiro,tab=True):
@@ -207,17 +270,8 @@ def debuxar_sudoku(taboleiro,tab=True):
 
 taboleiro_cargado = cargar_sudoku()		
 
-#PROBAS	
-intentos = 0
-while True:
-	intentos += 1
-	casillas = crear_sudoku(taboleiro_cargado)
-	if not 0 in [c.valor for c in casillas]:
-		break
-	#else:
-	#	debuxar_sudoku(casillas)
-		
-print "intentos: %r" % intentos
+sudoku_resolto = resolver_sudoku(taboleiro_cargado)
 
 #AMOSAMOS O RESULTADO
-debuxar_sudoku(casillas)
+if sudoku_resolto:
+	debuxar_sudoku(sudoku_resolto)
