@@ -175,7 +175,11 @@ def posibles_avance(taboleiro,pos):
 	posibles_cadro_casilla = [taboleiro[x].posibles_copia for x in cadro_a_comprobar 
 			if x>pos and not taboleiro[x].marcada]
 	posibles_total = posibles_fila_casilla+posibles_columna_casilla+posibles_cadro_casilla
-	return posibles_total
+	unido_total = []
+	for i in posibles_total:
+		for x in i:
+			unido_total.append(x)
+	return unido_total
 	
 #CREAMOS/RESOLVEMOS O SUDOKU
 def resolver_sudoku(taboleiro=False):
@@ -201,9 +205,15 @@ def resolver_sudoku(taboleiro=False):
 				if casillas[p].posibles:
 					#ORDENAMOS AS CASILLAS POSIBLES SEGÚN SE ESTAN OS NÚMEROS
 					#EN OUTRAS CASILLAS
-					casillas[p].posibles = sorted(casillas[p].posibles,
-											key=lambda x: x in posibles_avance(casillas,p),
-											reverse=True)
+					#casillas[p].posibles = sorted(casillas[p].posibles,
+					#						key=lambda x: x in posibles_avance(casillas,p),
+					#						reverse=True)
+					#dict_posibles = {x:0 for x in range(1,10)}
+					#for i in posibles_avance(casillas,p):
+					#	dict_posibles[i] += 1
+					#casillas[p].posibles = sorted(casillas[p].posibles,
+					#						key=lambda x: dict_posibles[x],
+					#						reverse=False)
 					for n in casillas[p].posibles:
 						#print "pos:",p, "intentando con... ",n, " , posibles: ", \
 						#		str(casillas[p].posibles), str(casillas[p].posibles_copia)
@@ -242,7 +252,7 @@ def resolver_sudoku(taboleiro=False):
 							casillas = quitar_posibles(casillas,casillas[i].valor,i)
 							casillas = quitar_posibles(casillas,casillas[i].valor,i,False)
 					else:
-						#print "Non se pode resolver!"
+						print "Non se pode resolver"
 						return False
 			else:
 				#print "*pos:",p, "xa ten numero asignado: ",casillas[p].valor
@@ -254,7 +264,8 @@ def resolver_sudoku(taboleiro=False):
 def debuxar_sudoku(taboleiro,tab=True):
 	for c in range(len(taboleiro)):
 		if c%27 == 0:
-			print
+			if not c == 0:
+				print
 		if c%9 == 0:
 			print
 		if c%3 == 0:
@@ -263,10 +274,6 @@ def debuxar_sudoku(taboleiro,tab=True):
 			print taboleiro[c].valor,
 		else:
 			print taboleiro[c],
-	print
-	print
-	if tab:
-		print "Sudoku correcto? ", comprobar_sudoku(taboleiro)
 
 taboleiro_cargado = cargar_sudoku()		
 
@@ -274,4 +281,7 @@ sudoku_resolto = resolver_sudoku(taboleiro_cargado)
 
 #AMOSAMOS O RESULTADO
 if sudoku_resolto:
+	print
+	print
+	print "Sudoku resolto!"
 	debuxar_sudoku(sudoku_resolto)
