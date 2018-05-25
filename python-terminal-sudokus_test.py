@@ -1,21 +1,23 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
+
 import random
 import sys
-
 #GARDAMOS AS POSICIONS REFERIDAS AS FILAS, COLUMNAS E CADROS.
 FILAS = []
 for i in range(0,81,9):
-	FILAS.append(range(i,i+9))
+	FILAS.append(list(range(i,i+9)))
 
 COLUMNAS = []
 for i in range(9):
-	COLUMNAS.append(range(i,81,9))
+	COLUMNAS.append(list(range(i,81,9)))
 
 CADROS = []
 for i in range(1,4):
 	for z in range(0,9,3):
-		CADROS.append([range(x,x+3) for x in range((27*(i-1))+z,(27*i)+z,9)])
+		CADROS.append([list(range(x,x+3)) for x in range((27*(i-1))+z,(27*i)+z,9)])
+
 CADROS = [c[0]+c[1]+c[2] for c in CADROS]
 
 #GARDAMOS NUNHA LISTA AS CASILLAS INMUTABLES
@@ -33,12 +35,13 @@ def cargar_sudoku():
 		debuxar_sudoku(lista_doc,False)
 		return lista_doc
 	else:
-		return False
+		print("Necesitas pasar un sudoku como argumento.")
+		sys.exit(0)
 	
 #CLASE PARA GARDAR DATOS DAS CASILLAS
 class casilla():
 	def __init__(self,valor,aleatorio=False):
-		self.posibles = range(1,10)
+		self.posibles = list(range(1,10))
 		if aleatorio:
 			random.shuffle(self.posibles)
 		self.posibles_copia = self.posibles[:]
@@ -89,8 +92,8 @@ def comprobar_sudoku(taboleiro):
 #FUNCIÓN PARA COMPROBAR AS POSIBILIDADES DE CADA CASILLA 
 #CANDO SE ENGADE UN VALOR A UNHA
 def quitar_posibles(taboleiro,num,pos,copia=True):
-	fila_afectada = FILAS[pos/9]
-	columna_afectada = COLUMNAS[pos-9*(pos/9)]
+	fila_afectada = FILAS[int(pos/9)]
+	columna_afectada = COLUMNAS[pos-9*(int(pos/9))]
 	for cadro in CADROS:
 		if pos in cadro:
 			cadro_afectado = cadro
@@ -106,8 +109,8 @@ def quitar_posibles(taboleiro,num,pos,copia=True):
 
 #COMPROBAMOS SE O TABOLEIRO É IDÓNEO PARA AVANZAR
 def valido(taboleiro,pos):
-	fila_a_comprobar = FILAS[pos/9]
-	columna_a_comprobar = COLUMNAS[pos-9*(pos/9)]
+	fila_a_comprobar = FILAS[int(pos/9)]
+	columna_a_comprobar = COLUMNAS[pos-9*(int(pos/9))]
 	for cadro in CADROS:
 		if pos in cadro:
 			cadro_a_comprobar = cadro
@@ -252,7 +255,7 @@ def resolver_sudoku(taboleiro=False):
 							casillas = quitar_posibles(casillas,casillas[i].valor,i)
 							casillas = quitar_posibles(casillas,casillas[i].valor,i,False)
 					else:
-						print "Non se pode resolver"
+						print("Non se pode resolver")
 						return False
 			else:
 				#print "*pos:",p, "xa ten numero asignado: ",casillas[p].valor
@@ -265,23 +268,24 @@ def debuxar_sudoku(taboleiro,tab=True):
 	for c in range(len(taboleiro)):
 		if c%27 == 0:
 			if not c == 0:
-				print
+				print(" ")
 		if c%9 == 0:
-			print
+			print(" ")
 		if c%3 == 0:
-			print " ",
+			print(" ",end=" ")
 		if tab:
-			print taboleiro[c].valor,
+			print(taboleiro[c].valor, end=" ")
 		else:
-			print taboleiro[c],
-
+			print(taboleiro[c], end=" ")
+ 
 taboleiro_cargado = cargar_sudoku()		
 
 sudoku_resolto = resolver_sudoku(taboleiro_cargado)
 
 #AMOSAMOS O RESULTADO
 if sudoku_resolto:
-	print
-	print
-	print "Sudoku resolto!"
+	print("")
+	print("")
+	print("Sudoku resolto!")
 	debuxar_sudoku(sudoku_resolto)
+	print("")
